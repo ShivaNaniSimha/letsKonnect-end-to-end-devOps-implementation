@@ -69,7 +69,7 @@ pipeline {
                         git config user.email "shivananisimha@gmail.com"
                         currentTag=\$(grep -oP '(?<=image: ${DOCKER_IMAGE_BACKEND}:).*' deployment.yml || true) 
                         echo "Old tag: \$currentTag"
-                        sed -i "s|image: ${DOCKER_IMAGE_BACKEND}:.*|image: ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG}|" deployment.yml
+                        sed -i "s|image: ${DOCKER_IMAGE_BACKEND}:.*|image: ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG}|" server/deployment.yml
                         git add server/deployment.yml
                         git commit -m "Update image tag to ${IMAGE_TAG}"
                         git push https://${GIT_USER}:${TOKEN}@github.com/${GIT_USER}/${GIT_REPO}.git HEAD:main
