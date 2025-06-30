@@ -62,7 +62,7 @@ pipeline {
 
         stage('Update Kubernetes Manifest in Git') {
             steps {
-                dir('kubernetes-manifests/server') {
+                dir('kubernetes-manifests') {
                    withCredentials([string(credentialsId: "github-token", variable: 'TOKEN')]) {
                         sh '''
                         git config user.name "${GIT_USER}"
@@ -70,7 +70,7 @@ pipeline {
                         currentTag=\$(grep -oP '(?<=image: ${DOCKER_IMAGE_BACKEND}:).*' deployment.yml || true) 
                         echo "Old tag: \$currentTag"
                         sed -i "s|image: ${DOCKER_IMAGE_BACKEND}:.*|image: ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG}|" deployment.yml
-                        git add deployment.yml
+                        git add server/deployment.yml
                         git commit -m "Update image tag to ${IMAGE_TAG}"
                         git push https://${GIT_USER}:${TOKEN}@github.com/${GIT_USER}/${GIT_REPO}.git HEAD:main
 
