@@ -2,54 +2,32 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = credentials('DOCKER_IMAGE_NAME')
+        DOCKER_IMAGE_FRONTEND = credentials('DOCKER_IMAGE_NAME_FRONTEND')
         DOCKER_CREDS = 'docker-hub-creds'
-        GIT_REPO = 'letsKonnect-end-to-end-devops-implementation'
         GIT_USER = 'ShivaNaniSimha'
-        GITHUB_TOKEN_ID = 'github-token'
         IMAGE_TAG = "${BUILD_NUMBER}"
+        GIT_REPO = "letsKonnect-end-to-end-devOps-implementation"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                 git url: "https://github.com/${GIT_USER}/${GIT_REPO}.git", branch: 'main', credentialsId: 'GITHUB'
+                git branch: 'main', url: "https://github.com/${GIT_USER}/${GIT_REPO}.git"
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
                 dir('Client') {
-                    withCredentials([string(credentialsId: 'letskonnect-frontend-token', variable: 'TOKEN')]) {
-                        withSonarQubeEnv('sonar-server') {
-                            script {
-                                def scannerHome = tool 'sonar-scanner'
-                                sh """
-                                    ${scannerHome}/bin/sonar-scanner \
-                                    -Dsonar.projectKey=letskonnect-frontend \
-                                    -Dsonar.projectName=letskonnect-frontend \
-                                    -Dsonar.sources=src \
-                                    -Dsonar.exclusions=**/node_modules/** \
-                                    -Dsonar.sourceEncoding=UTF-8 \
-                                    -Dsonar.login=${TOKEN}
-                                """
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Build & Push Docker Image') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                        dir('Server') {
-                            sh '''
-                            docker login -u "$USER" -p "$PASS"
-                            docker build -t $DOCKER_IMAGE:$IMAGE_TAG .
-                            docker push $DOCKER_IMAGE:$IMAGE_TAG
-                            '''
+                    withSonarQubeEnv('sonar-server') {
+                        script {
+                            def scannerHome = tool 'sonar-scanner' // must match name in Global Tool Configuration
+                            sh "${scannerHome}/bin/sonar-scanner " +
+                               "-Dsonar.projectKey=letskonnect-backend " +
+                               "-Dsonar.projectName=letskonnect-backend " +
+                               "-Dsonar.sources=. " +
+                               "-Dsonar.exclusions=**/node_modules/** " +
+                               "-Dsonar.sourceEncoding=UTF-8"
                         }
                     }
                 }
@@ -63,33 +41,39 @@ pipeline {
                         dir('Client') {
                             sh '''
                             docker login -u "$USER" -p "$PASS"
-                            docker build -t $DOCKER_IMAGE:$IMAGE_TAG .
-                            docker push $DOCKER_IMAGE:$IMAGE_TAG
+                            docker build -t $DOCKER_IMAGE_FRONTEND:$IMAGE_TAG .
+                            docker push $DOCKER_IMAGE_FRONTEND:$IMAGE_TAG
                             '''
                         }
                     }
                 }
             }
         }
-
-        stage('Checkout kubernetes manifests') {
+    
+        stage('Checkout Kubernetes Manifests') {
             steps {
-                 git url: "https://github.com/${GIT_USER}/${GIT_REPO}.git", branch: 'main', credentialsId: 'GITHUB'
+                dir('kubernetes-manifests') {
+                    git url: "https://github.com/${GIT_USER}/${GIT_REPO}.git", branch: 'main', credentialsId: 'GITHUB'
+                }
             }
         }
+
+
 
         stage('Update Kubernetes Manifest in Git') {
             steps {
                 dir('kubernetes-manifests/client') {
-                   withCredentials([string(credentialsId: "${GITHUB_TOKEN_ID}", variable: 'TOKEN')]) {
+                   withCredentials([string(credentialsId: "github-token", variable: 'TOKEN')]) {
                         sh '''
                         git config user.name "${GIT_USER}"
-                        git config user.email "your@email.com"
-                        currentTag=\$(grep -oP '(?<=image: ${DOCKER_IMAGE}:).*' deployment.yaml || true) 
+                        git config user.email "shivananisimha@gmail.com"
+                        currentTag=\$(grep -oP '(?<=image: ${DOCKER_IMAGE_FRONTEND}:).*' deployment.yml || true) 
                         echo "Old tag: \$currentTag"
-                        sed -i "s|image: ${DOCKER_IMAGE}:.*|image: ${DOCKER_IMAGE}:${IMAGE_TAG}|" deployment.yaml
-                        git commit -am "Update image tag to ${IMAGE_TAG}"
-                        git push https://${TOKEN}@github.com/${GIT_USER}/${GIT_REPO}.git HEAD:main
+                        sed -i "s|image: ${DOCKER_IMAGE_FRONTEND}:.*|image: ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG}|" deployment.yml
+                        git add deployment.yml
+                        git commit -m "Update image tag to ${IMAGE_TAG}"
+                        git push https://${GIT_USER}:${TOKEN}@github.com/${GIT_USER}/${GIT_REPO}.git HEAD:main
+
                         '''
                     }
                 }
