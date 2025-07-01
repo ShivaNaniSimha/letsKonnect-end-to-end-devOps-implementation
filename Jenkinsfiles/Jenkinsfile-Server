@@ -10,6 +10,12 @@ pipeline {
     }
 
     stages {
+        stage('Cleaning Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
         stage('Checkout Code') {
             steps {
                 git branch: 'main', url: "https://github.com/${GIT_USER}/${GIT_REPO}.git"
@@ -38,7 +44,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                        dir('Client') {
+                        dir('Server') {
                             sh '''
                             docker login -u "$USER" -p "$PASS"
                             docker build -t $DOCKER_IMAGE_BACKEND:$IMAGE_TAG .
@@ -50,30 +56,29 @@ pipeline {
             }
         }
     
-        stage('Checkout Kubernetes Manifests') {
+        stage('Checkout kubernetes manifests') {
             steps {
-                dir('kubernetes-manifests') {
-                    git url: "https://github.com/${GIT_USER}/${GIT_REPO}.git", branch: 'main', credentialsId: 'GITHUB'
-                }
+                git branch: 'main', url: "https://github.com/${GIT_USER}/${GIT_REPO}.git"
             }
         }
 
-
-
         stage('Update Kubernetes Manifest in Git') {
             steps {
-                dir('kubernetes-manifests') {
+                dir('kubernetes-manifests/server') {
                    withCredentials([string(credentialsId: "github-token", variable: 'TOKEN')]) {
                         sh '''
                         git config user.name "${GIT_USER}"
                         git config user.email "shivananisimha@gmail.com"
-                        currentTag=\$(grep -oP '(?<=image: ${DOCKER_IMAGE_BACKEND}:).*' deployment.yml || true) 
-                        echo "Old tag: \$currentTag"
-                        sed -i "s|image: ${DOCKER_IMAGE_BACKEND}:.*|image: ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG}|" server/deployment.yml
-                        git add server/deployment.yml
-                        git commit -m "Update image tag to ${IMAGE_TAG}"
-                        git push https://${GIT_USER}:${TOKEN}@github.com/${GIT_USER}/${GIT_REPO}.git HEAD:main
-
+                        if [ -f deployment.yml ]; then
+                            currentTag=\$(grep -oP '(?<=image: ${DOCKER_IMAGE_BACKEND}:)[^ ]+' deployment.yml || true) 
+                            echo "Old tag: \$currentTag"
+                            sed -i "s|image: ${DOCKER_IMAGE_BACKEND}:.*|image: ${DOCKER_IMAGE_BACKEND}:${IMAGE_TAG}|" deployment.yml
+                            git add deployment.yml
+                            git commit -m "Update image tag to ${IMAGE_TAG}" || echo "No changes to commit"
+                            git push https://${GIT_USER}:${TOKEN}@github.com/${GIT_USER}/${GIT_REPO}.git HEAD:main
+                        else
+                            echo " deployment.yml not found in expected directory"
+                        fi
                         '''
                     }
                 }

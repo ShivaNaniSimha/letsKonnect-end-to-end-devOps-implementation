@@ -10,6 +10,12 @@ pipeline {
     }
 
     stages {
+        stage('Cleaning Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
         stage('Checkout Code') {
             steps {
                 git branch: 'main', url: "https://github.com/${GIT_USER}/${GIT_REPO}.git"
@@ -50,34 +56,33 @@ pipeline {
             }
         }
     
-        stage('Checkout Kubernetes Manifests') {
+        stage('Checkout kubernetes manifests') {
             steps {
-                dir('kubernetes-manifests') {
-                    git url: "https://github.com/${GIT_USER}/${GIT_REPO}.git", branch: 'main', credentialsId: 'GITHUB'
-                }
+                git branch: 'main', url: "https://github.com/${GIT_USER}/${GIT_REPO}.git"
             }
         }
 
-
-
         stage('Update Kubernetes Manifest in Git') {
             steps {
-                dir('kubernetes-manifests') {
+                dir('kubernetes-manifests/client') {
                    withCredentials([string(credentialsId: "github-token", variable: 'TOKEN')]) {
                         sh '''
                         git config user.name "${GIT_USER}"
                         git config user.email "shivananisimha@gmail.com"
-                        currentTag=\$(grep -oP '(?<=image: ${DOCKER_IMAGE_FRONTEND}:).*' deployment.yml || true) 
-                        echo "Old tag: \$currentTag"
-                        sed -i "s|image: ${DOCKER_IMAGE_FRONTEND}:.*|image: ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG}|" client/deployment.yml
-                        git add client/deployment.yml
-                        git commit -m "Update image tag to ${IMAGE_TAG}"
-                        git push https://${GIT_USER}:${TOKEN}@github.com/${GIT_USER}/${GIT_REPO}.git HEAD:main
-
+                        if [ -f deployment.yml ]; then
+                            currentTag=\$(grep -oP '(?<=image: ${DOCKER_IMAGE_FRONTEND}:)[^ ]+' deployment.yml || true) 
+                            echo "Old tag: \$currentTag"
+                            sed -i "s|image: ${DOCKER_IMAGE_FRONTEND}:.*|image: ${DOCKER_IMAGE_FRONTEND}:${IMAGE_TAG}|" deployment.yml
+                            git add deployment.yml
+                            git commit -m "Update image tag to ${IMAGE_TAG}" || echo "No changes to commit"
+                            git push https://${GIT_USER}:${TOKEN}@github.com/${GIT_USER}/${GIT_REPO}.git HEAD:main
+                        else
+                            echo " deployment.yml not found in expected directory"
+                        fi
                         '''
                     }
                 }
             }
-        }
+       }
     }
 }
