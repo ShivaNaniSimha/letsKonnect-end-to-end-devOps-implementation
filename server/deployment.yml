@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: shivasimha/letskonnect-server:33
+          image: shivasimha/letskonnect-server:34
           ports:
             - containerPort: 4000
           env:
