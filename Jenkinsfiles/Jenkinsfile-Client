@@ -29,9 +29,9 @@ pipeline {
                         script {
                             def scannerHome = tool 'sonar-scanner' // must match name in Global Tool Configuration
                             sh "${scannerHome}/bin/sonar-scanner " +
-                               "-Dsonar.projectKey=letskonnect-backend " +
-                               "-Dsonar.projectName=letskonnect-backend " +
-                               "-Dsonar.sources=. " +
+                               "-Dsonar.projectKey=letskonnect-frontend " +
+                               "-Dsonar.projectName=letskonnect-frontend " +
+                               "-Dsonar.sources=src " +
                                "-Dsonar.exclusions=**/node_modules/** " +
                                "-Dsonar.sourceEncoding=UTF-8"
                         }
