@@ -6,7 +6,7 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:524831447277:certificate/4ba2af2f-bbc3-4543-8941-13377b08116d
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:524831447277:certificate/2d171b71-b312-445f-b911-42b78b712b73
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS": 443}]'
     alb.ingress.kubernetes.io/target-type: ip
 spec:
