@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: shivasimha/letskonnect-server:1
+          image: shivasimha/letskonnect-server:2
           imagePullPolicy: Always
           ports:
             - containerPort: 4000
