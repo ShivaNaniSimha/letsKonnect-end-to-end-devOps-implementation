@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: shivasimha/letskonnect-client:1
+          image: shivasimha/letskonnect-client:3
           ports:
             - containerPort: 3000
           env:
