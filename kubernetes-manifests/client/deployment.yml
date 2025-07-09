@@ -20,6 +20,4 @@ spec:
           image: shivasimha/letskonnect-client:3
           ports:
             - containerPort: 3000
-          env:
-            - name: VITE_API_BASE_URL
-              value: http://backend-service:4000
+          
