@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
+
 import AuthRoute from './Routes/AuthRoute.js';
 import UserRoute from './Routes/UserRoute.js';
 import PostRoute from './Routes/PostRoute.js';
@@ -26,6 +27,11 @@ app.use('/auth', AuthRoute);
 app.use('/user', UserRoute);
 app.use('/post', PostRoute);
 app.use('/upload', UploadRoute);
+
+// ✅ Health check route for Kubernetes probes
+app.get('/', (req, res) => {
+  res.status(200).send('✅ Backend is healthy');
+});
 
 // Database connection
 mongoose.connect(
